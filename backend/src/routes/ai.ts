@@ -282,6 +282,92 @@ router.post('/tags', authenticateToken, aiRateLimit, checkAIAvailability, aiCont
 
 /**
  * @swagger
+ * /api/ai/find-connections:
+ *   post:
+ *     summary: 發現知識關聯
+ *     tags: [AI]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: 要分析關聯的內容
+ *               existingCards:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     content:
+ *                       type: string
+ *                     tags:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                 description: 現有的知識卡片列表
+ *     responses:
+ *       200:
+ *         description: 關聯分析成功
+ *       400:
+ *         description: 請求參數無效
+ *       503:
+ *         description: AI 服務不可用
+ */
+router.post('/find-connections', authenticateToken, aiRateLimit, checkAIAvailability, async (req, res) => {
+  try {
+    const { content, existingCards = [] } = req.body;
+
+    if (!content || typeof content !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: '請提供有效的內容',
+      });
+    }
+
+    // 使用AI服務分析關聯
+    const aiService = (await import('../services/aiService')).aiService;
+    const connections = await aiService.findConnections(content, existingCards);
+
+    res.json({
+      success: true,
+      message: '關聯分析完成',
+      data: {
+        connections,
+        totalConnections: connections.length,
+      },
+    });
+  } catch (error) {
+    console.error('AI關聯分析失敗:', error);
+    
+    if (error instanceof Error && error.message.includes('AI service')) {
+      return res.status(503).json({
+        success: false,
+        message: 'AI 服務暫時不可用',
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: '關聯分析失敗',
+      error: error instanceof Error ? error.message : '未知錯誤',
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/ai/sentiment:
  *   post:
  *     summary: 分析情感

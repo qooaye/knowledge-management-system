@@ -476,6 +476,102 @@ router.patch('/:id', authenticateToken, async (req, res) => {
 /**
  * 刪除文件
  */
+/**
+ * 分析文件
+ */
+router.post('/:id/analyze', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    const document = await prisma.document.findFirst({
+      where: {
+        id,
+        userId,
+      },
+    });
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: '文件不存在',
+      });
+    }
+
+    if (document.status !== 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        message: '文件尚未處理完成，無法進行分析',
+      });
+    }
+
+    if (!document.content) {
+      return res.status(400).json({
+        success: false,
+        message: '文件內容為空，無法進行分析',
+      });
+    }
+
+    // 調用AI分析服務
+    const aiService = (await import('../services/aiService')).aiService;
+    const analysis = await aiService.analyzeDocument(document.content);
+
+    // 儲存分析結果
+    const documentAnalysis = await prisma.documentAnalysis.upsert({
+      where: {
+        documentId: id,
+      },
+      create: {
+        documentId: id,
+        summary: analysis.summary,
+        keywords: analysis.keywords.join(','),
+        concepts: JSON.stringify(analysis.concepts),
+        topics: analysis.topics.join(','),
+        category: analysis.category,
+        difficulty: analysis.difficulty,
+        insights: analysis.insights.join(','),
+      },
+      update: {
+        summary: analysis.summary,
+        keywords: analysis.keywords.join(','),
+        concepts: JSON.stringify(analysis.concepts),
+        topics: analysis.topics.join(','),
+        category: analysis.category,
+        difficulty: analysis.difficulty,
+        insights: analysis.insights.join(','),
+      },
+    });
+
+    // 更新文件狀態
+    await prisma.document.update({
+      where: { id },
+      data: {
+        status: 'ANALYZED',
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: '文件分析完成',
+      data: {
+        ...documentAnalysis,
+        keywords: analysis.keywords,
+        concepts: analysis.concepts,
+        topics: analysis.topics,
+        insights: analysis.insights,
+      },
+    });
+  } catch (error) {
+    console.error('文件分析失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '文件分析失敗',
+      error: error instanceof Error ? error.message : '未知錯誤',
+    });
+  }
+});
+
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;

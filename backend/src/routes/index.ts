@@ -3,7 +3,7 @@ import authRoutes from './authRoutes';
 import documentRoutes from './documentRoutes';
 import aiRoutes from './ai';
 import crawlerRoutes from './crawler';
-// import knowledgeRoutes from './knowledgeRoutes';
+import knowledgeRoutes from './knowledgeRoutes';
 
 const router = Router();
 
@@ -25,6 +25,6 @@ router.use('/auth', authRoutes);
 router.use('/documents', documentRoutes);
 router.use('/ai', aiRoutes);
 router.use('/crawler', crawlerRoutes);
-// router.use('/knowledge-cards', knowledgeRoutes);
+router.use('/knowledge-cards', knowledgeRoutes);
 
 export default router;

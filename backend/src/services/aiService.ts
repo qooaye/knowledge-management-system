@@ -450,6 +450,146 @@ ${content.substring(0, 12000)}
     
     return results;
   }
+
+  // 發現知識關聯
+  async findConnections(content: string, existingCards: any[] = []): Promise<any[]> {
+    try {
+      if (!this.isAvailable()) {
+        throw new Error('AI service is not available');
+      }
+
+      const prompt = `
+分析以下內容與現有知識卡片的關聯性：
+
+**新內容：**
+${content}
+
+**現有知識卡片：**
+${existingCards.map(card => `
+- 標題: ${card.title}
+- 內容: ${card.content}
+- 標籤: ${card.tags ? card.tags.join(', ') : '無'}
+`).join('\n')}
+
+**請按照以下JSON格式輸出關聯分析：**
+{
+  "connections": [
+    {
+      "cardId": "卡片ID",
+      "cardTitle": "卡片標題",
+      "relevanceScore": 0.8,
+      "connectionType": "概念相關/主題相關/標籤相關",
+      "reasoning": "關聯理由",
+      "sharedConcepts": ["共同概念1", "共同概念2"],
+      "suggestedLinks": ["建議的連結方式"]
+    }
+  ],
+  "newConnections": [
+    {
+      "concept": "新概念",
+      "relatedCards": ["相關卡片ID"],
+      "connectionStrength": "強/中/弱"
+    }
+  ],
+  "insights": ["洞察1", "洞察2"]
+}
+`;
+
+      const response = await this.openai.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一個專業的知識管理分析師，擅長發現不同知識點之間的關聯性。請提供準確的JSON格式回應。',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+      });
+
+      const result = response.choices[0]?.message?.content;
+      if (!result) {
+        throw new Error('No response from AI service');
+      }
+
+      const analysis = JSON.parse(result);
+      
+      logger.info('AI connections analysis completed', {
+        connectionsFound: analysis.connections?.length || 0,
+        newConnections: analysis.newConnections?.length || 0,
+      });
+
+      return analysis.connections || [];
+    } catch (error) {
+      logger.error('AI connections analysis failed', error);
+      
+      if (error instanceof Error && error.message.includes('AI service')) {
+        throw error;
+      }
+      
+      // 如果AI服務失敗，返回基於規則的簡單關聯分析
+      return this.fallbackConnectionAnalysis(content, existingCards);
+    }
+  }
+
+  // 備用的基於規則的關聯分析
+  private fallbackConnectionAnalysis(content: string, existingCards: any[]): any[] {
+    const connections = [];
+    const contentLower = content.toLowerCase();
+    const contentWords = contentLower.split(/\s+/);
+
+    for (const card of existingCards) {
+      const cardContentLower = card.content.toLowerCase();
+      const cardWords = cardContentLower.split(/\s+/);
+      const cardTags = card.tags || [];
+
+      let relevanceScore = 0;
+      const sharedConcepts = [];
+      let connectionType = '';
+      let reasoning = '';
+
+      // 計算詞彙重疊度
+      const sharedWords = contentWords.filter(word => 
+        word.length > 3 && cardWords.includes(word)
+      );
+      
+      if (sharedWords.length > 0) {
+        relevanceScore += Math.min(sharedWords.length * 0.1, 0.5);
+        sharedConcepts.push(...sharedWords.slice(0, 3));
+        connectionType = '內容相關';
+        reasoning = `共享關鍵詞: ${sharedWords.slice(0, 3).join(', ')}`;
+      }
+
+      // 檢查標籤相關性
+      for (const tag of cardTags) {
+        if (contentLower.includes(tag.toLowerCase())) {
+          relevanceScore += 0.3;
+          sharedConcepts.push(tag);
+          connectionType = '標籤相關';
+          reasoning += reasoning ? '; ' : '';
+          reasoning += `包含標籤: ${tag}`;
+        }
+      }
+
+      if (relevanceScore > 0.2) {
+        connections.push({
+          cardId: card.id,
+          cardTitle: card.title,
+          relevanceScore: Math.min(relevanceScore, 1.0),
+          connectionType,
+          reasoning,
+          sharedConcepts,
+          suggestedLinks: ['相關概念', '參考資料'],
+        });
+      }
+    }
+
+    return connections.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  }
 }
 
 export const aiService = new AIService();

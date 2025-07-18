@@ -24,10 +24,10 @@ router.put('/tasks/:id', rateLimiter('updateCrawlerTask'), crawlerController.upd
 router.delete('/tasks/:id', rateLimiter('deleteCrawlerTask'), crawlerController.deleteTask);
 
 // 立即執行爬蟲任務 - 較嚴格的限制
-router.post('/tasks/:id/run', rateLimiter('runCrawlerTask'), crawlerController.runTask);
+router.put('/tasks/:id/start', rateLimiter('runCrawlerTask'), crawlerController.runTask);
 
 // 停止爬蟲任務
-router.post('/tasks/:id/stop', rateLimiter('stopCrawlerTask'), crawlerController.stopTask);
+router.put('/tasks/:id/stop', rateLimiter('stopCrawlerTask'), crawlerController.stopTask);
 
 // 獲取爬蟲結果
 router.get('/tasks/:id/results', rateLimiter('getCrawlerResults'), crawlerController.getResults);
