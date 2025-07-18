@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫
+  postgres:
+    image: postgres:15-alpine
+    container_name: kms_postgres
+    environment:
+      POSTGRES_DB: knowledge_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - kms_network
+    restart: unless-stopped
+
+  # Redis 快取
+  redis:
+    image: redis:7-alpine
+    container_name: kms_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kms_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # MinIO 對象存儲
+  minio:
+    image: minio/minio:latest
+    container_name: kms_minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - kms_network
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+
+  # 後端服務
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: kms_backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/knowledge_management?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123
+      MINIO_BUCKET: knowledge-management
+      MINIO_USE_SSL: false
+      JWT_SECRET: your-super-secret-jwt-key-development
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    networks:
+      - kms_network
+    restart: unless-stopped
+
+  # 前端服務
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: kms_frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:3001/api
+      GENERATE_SOURCEMAP: false
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - kms_network
+    restart: unless-stopped
+
+  # 爬蟲服務
+  crawler:
+    build:
+      context: ./crawler
+      dockerfile: Dockerfile.dev
+    container_name: kms_crawler
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/knowledge_management?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./crawler:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    networks:
+      - kms_network
+    restart: unless-stopped
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: kms_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - kms_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  kms_network:
+    driver: bridge

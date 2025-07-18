@@ -1,0 +1,213 @@
+/* 全局樣式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* 自定義 Ant Design 樣式 */
+.ant-layout {
+  min-height: 100vh;
+}
+
+.ant-layout-content {
+  padding: 24px;
+  background: #f0f2f5;
+}
+
+.ant-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ant-btn {
+  border-radius: 6px;
+}
+
+.ant-input {
+  border-radius: 6px;
+}
+
+.ant-select {
+  border-radius: 6px;
+}
+
+/* 自定義組件樣式 */
+.upload-area {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  background: #fafafa;
+  transition: border-color 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: #1890ff;
+}
+
+.upload-area.dragover {
+  border-color: #1890ff;
+  background: #f0f8ff;
+}
+
+.knowledge-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.knowledge-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.search-highlight {
+  background-color: #fff3cd;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.processing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f0f8ff;
+  border-radius: 6px;
+  border: 1px solid #91d5ff;
+}
+
+.error-message {
+  color: #ff4d4f;
+  background: #fff2f0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #ffccc7;
+}
+
+.success-message {
+  color: #52c41a;
+  background: #f6ffed;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #b7eb8f;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .ant-layout-content {
+    padding: 16px;
+  }
+  
+  .ant-card {
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-layout-content {
+    padding: 12px;
+  }
+  
+  .upload-area {
+    padding: 24px;
+  }
+}
+
+/* 動畫效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 滾動條樣式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 文字選擇顏色 */
+::selection {
+  background: #1890ff;
+  color: white;
+}
+
+/* 無障礙 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 打印樣式 */
+@media print {
+  .ant-layout-sider,
+  .ant-layout-header,
+  .ant-btn,
+  .ant-pagination {
+    display: none !important;
+  }
+  
+  .ant-layout-content {
+    padding: 0 !important;
+  }
+}

@@ -1,0 +1,31 @@
+FROM node:18-alpine
+
+# 設定工作目錄
+WORKDIR /app
+
+# 複製 package.json 和 package-lock.json
+COPY package*.json ./
+
+# 安裝依賴
+RUN npm install
+
+# 複製 Prisma schema
+COPY prisma ./prisma
+
+# 生成 Prisma Client
+RUN npx prisma generate
+
+# 複製源代碼
+COPY . .
+
+# 創建上傳目錄
+RUN mkdir -p uploads
+
+# 安裝 nodemon 全局
+RUN npm install -g nodemon
+
+# 暴露端口
+EXPOSE 3001
+
+# 啟動命令
+CMD ["npm", "run", "dev"]

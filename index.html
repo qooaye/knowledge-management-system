@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Management System</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Knowledge Management System</h1>
+            <nav>
+                <button id="add-note-btn" class="btn btn-primary">Add Note</button>
+                <button id="search-btn" class="btn btn-secondary">Search</button>
+                <button id="categories-btn" class="btn btn-secondary">Categories</button>
+            </nav>
+        </header>
+
+        <main>
+            <aside class="sidebar">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search notes...">
+                    <button id="search-submit" class="btn btn-small">Search</button>
+                </div>
+                
+                <div class="categories">
+                    <h3>Categories</h3>
+                    <div id="category-list">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+
+                <div class="tags">
+                    <h3>Tags</h3>
+                    <div id="tag-list">
+                        <!-- Tags will be populated here -->
+                    </div>
+                </div>
+            </aside>
+
+            <section class="content">
+                <div id="notes-container">
+                    <!-- Notes will be displayed here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal for adding/editing notes -->
+        <div id="note-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 id="modal-title">Add Note</h2>
+                <form id="note-form">
+                    <div class="form-group">
+                        <label for="note-title">Title:</label>
+                        <input type="text" id="note-title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="note-content">Content:</label>
+                        <textarea id="note-content" rows="10" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="note-category">Category:</label>
+                        <select id="note-category">
+                            <option value="">Select Category</option>
+                            <option value="personal">Personal</option>
+                            <option value="work">Work</option>
+                            <option value="study">Study</option>
+                            <option value="project">Project</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="note-tags">Tags (comma-separated):</label>
+                        <input type="text" id="note-tags" placeholder="tag1, tag2, tag3">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Note</button>
+                        <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="src/js/storage.js"></script>
+    <script src="src/js/note.js"></script>
+    <script src="src/js/search.js"></script>
+    <script src="src/js/ui.js"></script>
+    <script src="src/js/app.js"></script>
+</body>
+</html>

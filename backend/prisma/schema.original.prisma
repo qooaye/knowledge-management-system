@@ -1,0 +1,251 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用戶表
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 關聯
+  documents      Document[]
+  crawlerTasks   CrawlerTask[]
+  knowledgeCards KnowledgeCard[]
+  refreshTokens  RefreshToken[]
+
+  @@map("users")
+}
+
+// 刷新 Token 表
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // 關聯
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// 文件表
+model Document {
+  id              String         @id @default(cuid())
+  userId          String
+  title           String?
+  description     String?
+  fileName        String
+  originalName    String
+  mimeType        String
+  size            Int
+  path            String?
+  storageUrl      String?
+  category        String?
+  tags            String[]
+  status          DocumentStatus @default(UPLOADING)
+  content         String?
+  ocrText         String?
+  metadata        Json?
+  processingError String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // 關聯
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis        DocumentAnalysis?
+  knowledgeCards  KnowledgeCard[]
+
+  @@map("documents")
+}
+
+// 文件狀態枚舉
+enum DocumentStatus {
+  UPLOADING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// 文件分析表
+model DocumentAnalysis {
+  id         String    @id @default(cuid())
+  documentId String    @unique
+  summary    String
+  keywords   String[]
+  concepts   Json      // 存儲概念對象陣列
+  topics     String[]
+  category   String
+  difficulty String
+  insights   String[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // 關聯
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_analyses")
+}
+
+// 爬蟲任務表
+model CrawlerTask {
+  id          String        @id @default(cuid())
+  userId      String
+  name        String
+  platform    String
+  keywords    String[]
+  config      Json          // 存儲爬蟲配置
+  status      CrawlerStatus @default(PENDING)
+  progress    Int           @default(0)
+  resultCount Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  scheduledAt DateTime?
+
+  // 關聯
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  results CrawlerResult[]
+
+  @@map("crawler_tasks")
+}
+
+// 爬蟲狀態枚舉
+enum CrawlerStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  STOPPED
+}
+
+// 爬蟲結果表
+model CrawlerResult {
+  id              String   @id @default(cuid())
+  taskId          String
+  url             String
+  title           String
+  content         String
+  author          String?
+  publishedAt     DateTime?
+  platform        String
+  relevanceScore  Float
+  relevanceReason String
+  summary         String
+  keyPoints       String[]
+  tags            String[]
+  createdAt       DateTime @default(now())
+
+  // 關聯
+  task           CrawlerTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  knowledgeCards KnowledgeCard[]
+
+  @@map("crawler_results")
+}
+
+// 知識卡片表
+model KnowledgeCard {
+  id                   String   @id @default(cuid())
+  userId               String
+  title                String
+  content              String
+  category             String
+  tags                 String[]
+  sourceDocumentId     String?
+  sourceCrawlerResultId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // 關聯
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceDocument     Document?      @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  sourceCrawlerResult CrawlerResult? @relation(fields: [sourceCrawlerResultId], references: [id], onDelete: SetNull)
+  
+  // 卡片連接關聯
+  fromConnections CardConnection[] @relation("FromCard")
+  toConnections   CardConnection[] @relation("ToCard")
+
+  @@map("knowledge_cards")
+}
+
+// 卡片連接表
+model CardConnection {
+  id             String         @id @default(cuid())
+  fromCardId     String
+  toCardId       String
+  connectionType ConnectionType
+  strength       Float          @default(0.5)
+  description    String?
+  createdAt      DateTime       @default(now())
+
+  // 關聯
+  fromCard KnowledgeCard @relation("FromCard", fields: [fromCardId], references: [id], onDelete: Cascade)
+  toCard   KnowledgeCard @relation("ToCard", fields: [toCardId], references: [id], onDelete: Cascade)
+
+  @@unique([fromCardId, toCardId])
+  @@map("card_connections")
+}
+
+// 連接類型枚舉
+enum ConnectionType {
+  RELATED
+  PREREQUISITE
+  FOLLOWUP
+  CONTRADICTION
+  EXAMPLE
+  REFERENCE
+}
+
+// 系統配置表
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// 日誌表
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+// 索引優化
+model SearchIndex {
+  id         String   @id @default(cuid())
+  type       String   // 'document', 'knowledge_card', 'crawler_result'
+  resourceId String
+  content    String   // 索引內容
+  vector     String?  // 向量表示(如果使用向量搜索)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([type, resourceId])
+  @@map("search_indexes")
+}

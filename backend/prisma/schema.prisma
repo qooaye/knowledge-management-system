@@ -1,0 +1,202 @@
+// 簡化的 Prisma Schema 用於 SQLite 本地測試
+// 這是一個簡化版本，移除了 SQLite 不支援的功能
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 用戶表
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 關聯
+  documents      Document[]
+  crawlerTasks   CrawlerTask[]
+  knowledgeCards KnowledgeCard[]
+  refreshTokens  RefreshToken[]
+
+  @@map("users")
+}
+
+// 刷新 Token 表
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // 關聯
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// 文件表（簡化版）
+model Document {
+  id              String   @id @default(cuid())
+  userId          String
+  title           String?
+  description     String?
+  fileName        String
+  originalName    String
+  mimeType        String
+  size            Int
+  path            String?
+  storageUrl      String?
+  category        String?
+  tags            String   // 改為字串，用逗號分隔
+  status          String   @default("UPLOADING") // 改為字串
+  content         String?
+  ocrText         String?
+  metadata        String?  // 改為字串，存儲 JSON
+  processingError String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 關聯
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis        DocumentAnalysis?
+  knowledgeCards  KnowledgeCard[]
+
+  @@map("documents")
+}
+
+// 文件分析表（簡化版）
+model DocumentAnalysis {
+  id         String    @id @default(cuid())
+  documentId String    @unique
+  summary    String
+  keywords   String    // 改為字串，用逗號分隔
+  concepts   String    // 改為字串，存儲 JSON
+  topics     String    // 改為字串，用逗號分隔
+  category   String
+  difficulty String
+  insights   String    // 改為字串，用逗號分隔
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // 關聯
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_analyses")
+}
+
+// 爬蟲任務表（簡化版）
+model CrawlerTask {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  platform    String
+  keywords    String   // 改為字串，用逗號分隔
+  config      String   // 改為字串，存儲 JSON
+  status      String   @default("PENDING") // 改為字串
+  progress    Int      @default(0)
+  resultCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  scheduledAt DateTime?
+
+  // 關聯
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  results CrawlerResult[]
+
+  @@map("crawler_tasks")
+}
+
+// 爬蟲結果表（簡化版）
+model CrawlerResult {
+  id              String   @id @default(cuid())
+  taskId          String
+  url             String
+  title           String
+  content         String
+  author          String?
+  publishedAt     DateTime?
+  platform        String
+  relevanceScore  Float
+  relevanceReason String
+  summary         String
+  keyPoints       String   // 改為字串，用逗號分隔
+  tags            String   // 改為字串，用逗號分隔
+  createdAt       DateTime @default(now())
+
+  // 關聯
+  task           CrawlerTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  knowledgeCards KnowledgeCard[]
+
+  @@map("crawler_results")
+}
+
+// 知識卡片表（簡化版）
+model KnowledgeCard {
+  id                   String   @id @default(cuid())
+  userId               String
+  title                String
+  content              String
+  category             String
+  tags                 String   // 改為字串，用逗號分隔
+  sourceDocumentId     String?
+  sourceCrawlerResultId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // 關聯
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceDocument     Document?      @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  sourceCrawlerResult CrawlerResult? @relation(fields: [sourceCrawlerResultId], references: [id], onDelete: SetNull)
+
+  @@map("knowledge_cards")
+}
+
+// 系統配置表（簡化版）
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // 改為字串，存儲 JSON
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// 日誌表（簡化版）
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  metadata   String?  // 改為字串，存儲 JSON
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+// 搜索索引表（簡化版）
+model SearchIndex {
+  id         String   @id @default(cuid())
+  type       String   // 'document', 'knowledge_card', 'crawler_result'
+  resourceId String
+  content    String   // 索引內容
+  vector     String?  // 向量表示(如果使用向量搜索)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([type, resourceId])
+  @@map("search_indexes")
+}
