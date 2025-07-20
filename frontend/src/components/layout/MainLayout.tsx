@@ -41,8 +41,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     },
     {
       key: '/documents',
-      icon: <FileOutlined />,
-      label: '文件管理',
+      icon: <RobotOutlined />,
+      label: '文件上傳與AI分析重點',
     },
     {
       key: '/ai-analysis',

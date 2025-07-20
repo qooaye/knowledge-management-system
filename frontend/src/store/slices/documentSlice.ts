@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../index';
-import { getAuthToken } from '../../utils/auth';
+import { getAuthTokens } from '../../utils/auth';
 
 // 文件狀態枚舉
 export enum DocumentStatus {
@@ -85,6 +85,8 @@ interface DocumentState {
     status?: DocumentStatus;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
   };
 }
 
@@ -104,6 +106,8 @@ const initialState: DocumentState = {
   filters: {
     sortBy: 'createdAt',
     sortOrder: 'desc',
+    page: 1,
+    limit: 10,
   },
 };
 
@@ -124,7 +128,8 @@ export const fetchDocuments = createAsyncThunk<
   }
 >('documents/fetchDocuments', async (params, { rejectWithValue }) => {
   try {
-    const token = getAuthToken();
+    const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
     const queryParams = new URLSearchParams();
     
     if (params.page) queryParams.append('page', params.page.toString());
@@ -158,7 +163,8 @@ export const fetchDocument = createAsyncThunk<Document, string>(
   'documents/fetchDocument',
   async (documentId, { rejectWithValue }) => {
     try {
-      const token = getAuthToken();
+      const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
       const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -183,7 +189,8 @@ export const uploadDocument = createAsyncThunk<UploadResponse, FormData>(
   'documents/uploadDocument',
   async (formData, { rejectWithValue }) => {
     try {
-      const token = getAuthToken();
+      const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
       const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
         method: 'POST',
         headers: {
@@ -209,7 +216,8 @@ export const uploadDocuments = createAsyncThunk<BatchUploadResponse, FormData>(
   'documents/uploadDocuments',
   async (formData, { rejectWithValue }) => {
     try {
-      const token = getAuthToken();
+      const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
       const response = await fetch(`${API_BASE_URL}/api/documents/upload/batch`, {
         method: 'POST',
         headers: {
@@ -236,7 +244,8 @@ export const updateDocument = createAsyncThunk<
   { id: string; data: Partial<Document> }
 >('documents/updateDocument', async ({ id, data }, { rejectWithValue }) => {
   try {
-    const token = getAuthToken();
+    const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
     const response = await fetch(`${API_BASE_URL}/api/documents/${id}`, {
       method: 'PATCH',
       headers: {
@@ -262,7 +271,8 @@ export const deleteDocument = createAsyncThunk<string, string>(
   'documents/deleteDocument',
   async (documentId, { rejectWithValue }) => {
     try {
-      const token = getAuthToken();
+      const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
       const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}`, {
         method: 'DELETE',
         headers: {
@@ -288,7 +298,8 @@ export const getDocumentDownloadUrl = createAsyncThunk<
   string
 >('documents/getDocumentDownloadUrl', async (documentId, { rejectWithValue }) => {
   try {
-    const token = getAuthToken();
+    const tokens = getAuthTokens();
+    const token = tokens?.accessToken;
     const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
       headers: {
         'Authorization': `Bearer ${token}`,

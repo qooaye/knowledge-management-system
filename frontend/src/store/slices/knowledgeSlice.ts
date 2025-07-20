@@ -149,15 +149,16 @@ const knowledgeSlice = createSlice({
       })
       .addCase(fetchCards.fulfilled, (state, action) => {
         state.loading = false;
-        const { data, total, page, limit, hasMore } = action.payload;
+        const paginatedData = action.payload.data;
+        const cards = (paginatedData as any)?.items || [];
         
-        if (page === 1) {
-          state.cards = data;
-        } else {
-          state.cards = [...state.cards, ...data];
-        }
-        
-        state.pagination = { total, page, limit, hasMore };
+        state.cards = cards;
+        state.pagination = {
+          total: paginatedData?.total || 0,
+          page: paginatedData?.page || 1,
+          limit: paginatedData?.limit || 10,
+          hasMore: paginatedData?.hasMore || false
+        };
       })
       .addCase(fetchCards.rejected, (state, action) => {
         state.loading = false;
@@ -165,7 +166,7 @@ const knowledgeSlice = createSlice({
       })
       // Fetch Card
       .addCase(fetchCard.fulfilled, (state, action) => {
-        state.currentCard = action.payload;
+        state.currentCard = action.payload.data || null;
       })
       // Create Card
       .addCase(createCard.pending, state => {
@@ -174,7 +175,9 @@ const knowledgeSlice = createSlice({
       })
       .addCase(createCard.fulfilled, (state, action) => {
         state.loading = false;
-        state.cards.unshift(action.payload);
+        if (action.payload.data) {
+          state.cards.unshift(action.payload.data);
+        }
       })
       .addCase(createCard.rejected, (state, action) => {
         state.loading = false;
@@ -182,12 +185,14 @@ const knowledgeSlice = createSlice({
       })
       // Update Card
       .addCase(updateCard.fulfilled, (state, action) => {
-        const index = state.cards.findIndex(card => card.id === action.payload.id);
-        if (index !== -1) {
-          state.cards[index] = action.payload;
-        }
-        if (state.currentCard?.id === action.payload.id) {
-          state.currentCard = action.payload;
+        if (action.payload.data) {
+          const index = state.cards.findIndex(card => card.id === action.payload.data!.id);
+          if (index !== -1) {
+            state.cards[index] = action.payload.data;
+          }
+          if (state.currentCard?.id === action.payload.data.id) {
+            state.currentCard = action.payload.data;
+          }
         }
       })
       // Delete Card
@@ -204,7 +209,7 @@ const knowledgeSlice = createSlice({
       })
       .addCase(searchCards.fulfilled, (state, action) => {
         state.searching = false;
-        state.searchResults = action.payload;
+        state.searchResults = action.payload.data || [];
       })
       .addCase(searchCards.rejected, (state, action) => {
         state.searching = false;
@@ -212,11 +217,11 @@ const knowledgeSlice = createSlice({
       })
       // Fetch Connections
       .addCase(fetchConnections.fulfilled, (state, action) => {
-        state.connections = action.payload;
+        state.connections = action.payload.data || [];
       })
       // Create Connection
       .addCase(createConnection.fulfilled, (state, action) => {
-        state.connections.push(action.payload);
+        if (action.payload.data) { state.connections.push(action.payload.data); }
       })
       // Fetch Knowledge Graph
       .addCase(fetchKnowledgeGraph.pending, state => {
@@ -225,7 +230,7 @@ const knowledgeSlice = createSlice({
       })
       .addCase(fetchKnowledgeGraph.fulfilled, (state, action) => {
         state.loading = false;
-        state.knowledgeGraph = action.payload;
+        state.knowledgeGraph = action.payload.data || null;
       })
       .addCase(fetchKnowledgeGraph.rejected, (state, action) => {
         state.loading = false;

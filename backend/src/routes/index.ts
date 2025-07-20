@@ -4,6 +4,7 @@ import documentRoutes from './documentRoutes';
 import aiRoutes from './ai';
 import crawlerRoutes from './crawler';
 import knowledgeRoutes from './knowledgeRoutes';
+import aiAnalysisRoutes from './aiAnalysisRoutes';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/documents', documentRoutes);
 router.use('/ai', aiRoutes);
+router.use('/ai-analysis', aiAnalysisRoutes);
 router.use('/crawler', crawlerRoutes);
 router.use('/knowledge-cards', knowledgeRoutes);
 

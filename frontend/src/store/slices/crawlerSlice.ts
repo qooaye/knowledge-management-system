@@ -34,7 +34,7 @@ const initialState: CrawlerState = {
 export const fetchTasks = createAsyncThunk(
   'crawler/fetchTasks',
   async (params: { page?: number; limit?: number; status?: CrawlerStatus }) => {
-    const response = await crawlerService.getTasks(params);
+    const response = await crawlerService.getTasks(params.page || 1, params.limit || 10);
     return response.data;
   }
 );
@@ -50,7 +50,22 @@ export const fetchTask = createAsyncThunk(
 export const createTask = createAsyncThunk(
   'crawler/createTask',
   async (taskData: Omit<CrawlerTask, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    const response = await crawlerService.createTask(taskData);
+    // Convert Date objects to strings for API
+    const apiData = {
+      ...taskData,
+      config: taskData.config ? {
+        ...taskData.config,
+        dateRange: taskData.config.dateRange ? {
+          start: taskData.config.dateRange.start instanceof Date 
+            ? taskData.config.dateRange.start.toISOString() 
+            : taskData.config.dateRange.start,
+          end: taskData.config.dateRange.end instanceof Date 
+            ? taskData.config.dateRange.end.toISOString() 
+            : taskData.config.dateRange.end,
+        } : undefined
+      } : undefined
+    };
+    const response = await crawlerService.createTask(apiData as any);
     return response.data;
   }
 );
@@ -58,7 +73,7 @@ export const createTask = createAsyncThunk(
 export const startTask = createAsyncThunk(
   'crawler/startTask',
   async (id: string) => {
-    const response = await crawlerService.startTask(id);
+    const response = await crawlerService.runTask(id);
     return response.data;
   }
 );
@@ -74,7 +89,7 @@ export const stopTask = createAsyncThunk(
 export const fetchTaskResults = createAsyncThunk(
   'crawler/fetchTaskResults',
   async (params: { taskId: string; page?: number; limit?: number }) => {
-    const response = await crawlerService.getTaskResults(params);
+    const response = await crawlerService.getResults(params.taskId, params.page || 1, params.limit || 10);
     return response.data;
   }
 );

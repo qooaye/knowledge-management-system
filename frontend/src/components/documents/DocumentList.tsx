@@ -100,7 +100,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const handleDownload = async (document: Document) => {
     try {
       const result = await dispatch(getDocumentDownloadUrl(document.id)).unwrap();
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = result.downloadUrl;
       link.download = result.fileName;
       link.click();
@@ -280,7 +280,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
       render: (tags: string[]) => (
         <div>
           {tags.map(tag => (
-            <Tag key={tag} size="small">
+            <Tag key={tag}>
               {tag}
             </Tag>
           ))}

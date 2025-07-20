@@ -82,11 +82,13 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.tokens = action.payload.tokens;
-        state.isAuthenticated = true;
-        localStorage.setItem('accessToken', action.payload.tokens.accessToken);
-        localStorage.setItem('refreshToken', action.payload.tokens.refreshToken);
+        if (action.payload.data) {
+          state.user = action.payload.data.user;
+          state.tokens = action.payload.data.tokens;
+          state.isAuthenticated = true;
+          localStorage.setItem('accessToken', action.payload.data.tokens.accessToken);
+          localStorage.setItem('refreshToken', action.payload.data.tokens.refreshToken);
+        }
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -99,11 +101,13 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.tokens = action.payload.tokens;
-        state.isAuthenticated = true;
-        localStorage.setItem('accessToken', action.payload.tokens.accessToken);
-        localStorage.setItem('refreshToken', action.payload.tokens.refreshToken);
+        if (action.payload.data) {
+          state.user = action.payload.data.user;
+          state.tokens = action.payload.data.tokens;
+          state.isAuthenticated = true;
+          localStorage.setItem('accessToken', action.payload.data.tokens.accessToken);
+          localStorage.setItem('refreshToken', action.payload.data.tokens.refreshToken);
+        }
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -115,7 +119,7 @@ const authSlice = createSlice({
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.data || null;
         state.isAuthenticated = true;
       })
       .addCase(checkAuth.rejected, state => {
@@ -128,9 +132,11 @@ const authSlice = createSlice({
       })
       // Refresh Token
       .addCase(refreshToken.fulfilled, (state, action) => {
-        state.tokens = action.payload;
-        localStorage.setItem('accessToken', action.payload.accessToken);
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
+        if (action.payload.data) {
+          state.tokens = action.payload.data;
+          localStorage.setItem('accessToken', action.payload.data.accessToken);
+          localStorage.setItem('refreshToken', action.payload.data.refreshToken);
+        }
       })
       .addCase(refreshToken.rejected, state => {
         state.isAuthenticated = false;

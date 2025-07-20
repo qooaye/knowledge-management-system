@@ -6,14 +6,17 @@
       "type": "nodejs",
       "buildCommand": "cd backend && npm install && npm run build",
       "startCommand": "cd backend && npm start",
-      "port": 8080,
+      "port": 3001,
       "env": {
         "NODE_ENV": "production",
-        "PORT": "8080",
+        "PORT": "3001",
         "API_VERSION": "v1",
-        "JWT_SECRET": "your-super-secret-jwt-key-change-this-in-production",
+        "JWT_SECRET": "${JWT_SECRET}",
         "JWT_EXPIRES_IN": "24h",
         "JWT_REFRESH_EXPIRES_IN": "7d",
+        "DATABASE_URL": "${DATABASE_URL}",
+        "REDIS_URL": "${REDIS_URL}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "UPLOAD_MAX_SIZE": "104857600",
         "UPLOAD_STORAGE_TYPE": "local",
         "UPLOAD_DIR": "uploads",
@@ -27,7 +30,8 @@
         "LOG_LEVEL": "info",
         "LOG_FORMAT": "json",
         "ENABLE_SWAGGER": "false",
-        "ENABLE_SEED_DATA": "false"
+        "ENABLE_SEED_DATA": "false",
+        "CORS_ORIGIN": "https://${ZEABUR_WEB_DOMAIN}"
       }
     },
     {
@@ -35,11 +39,33 @@
       "type": "nodejs",
       "buildCommand": "cd frontend && npm install && npm run build",
       "startCommand": "cd frontend && npm run preview",
-      "port": 5173,
+      "port": 3000,
       "env": {
         "NODE_ENV": "production",
-        "VITE_API_URL": "https://your-backend-domain.zeabur.app"
+        "REACT_APP_API_URL": "https://${ZEABUR_BACKEND_DOMAIN}/api",
+        "GENERATE_SOURCEMAP": "false"
+      }
+    },
+    {
+      "name": "crawler",
+      "type": "nodejs",
+      "buildCommand": "cd crawler && npm install && npm run build",
+      "startCommand": "cd crawler && npm start",
+      "port": 3002,
+      "env": {
+        "NODE_ENV": "production",
+        "DATABASE_URL": "${DATABASE_URL}",
+        "REDIS_URL": "${REDIS_URL}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "CRAWLER_USER_AGENT": "KnowledgeManagementBot/1.0",
+        "CRAWLER_DELAY": "2000",
+        "CRAWLER_CONCURRENT_LIMIT": "2",
+        "CRAWLER_TIMEOUT": "30000"
       }
     }
-  ]
+  ],
+  "domains": {
+    "frontend": "${ZEABUR_WEB_DOMAIN}",
+    "backend": "${ZEABUR_BACKEND_DOMAIN}"
+  }
 }

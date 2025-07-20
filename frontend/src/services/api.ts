@@ -70,11 +70,11 @@ api.interceptors.response.use(
 
 // 通用 API 方法
 export const apiRequest = {
-  get: <T = any>(url: string, params?: any): Promise<AxiosResponse<T>> =>
-    api.get(url, { params }),
+  get: <T = any>(url: string, params?: any, config?: any): Promise<AxiosResponse<T>> =>
+    api.get(url, { params, ...config }),
   
-  post: <T = any>(url: string, data?: any): Promise<AxiosResponse<T>> =>
-    api.post(url, data),
+  post: <T = any>(url: string, data?: any, config?: any): Promise<AxiosResponse<T>> =>
+    api.post(url, data, config),
   
   put: <T = any>(url: string, data?: any): Promise<AxiosResponse<T>> =>
     api.put(url, data),

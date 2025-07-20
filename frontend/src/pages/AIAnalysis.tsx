@@ -39,13 +39,13 @@ const AIAnalysis: React.FC = () => {
       const formData = new FormData();
       formData.append('files', file);
 
-      const response = await documentService.uploadDocuments(formData);
+      const response = await documentService.uploadDocument(file);
       
-      if (response.documents && response.documents.length > 0) {
-        const uploadedDoc = response.documents[0];
+      if (response.data?.data) {
+        const uploadedDoc = response.data.data;
         setSelectedDocumentId(uploadedDoc.id);
         setActiveTab('document');
-        message.success(`文檔 "${uploadedDoc.fileName}" 上傳成功，可以開始分析`);
+        message.success(`文檔 "${uploadedDoc.originalName || uploadedDoc.filename}" 上傳成功，可以開始分析`);
       }
     } catch (error: any) {
       message.error(error.message || '文檔上傳失敗');

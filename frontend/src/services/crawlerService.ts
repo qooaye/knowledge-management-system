@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-const API_PREFIX = process.env.REACT_APP_API_PREFIX || '/api/v1';
+const API_PREFIX = process.env.REACT_APP_API_PREFIX || '/api';
 
 // 爬蟲平台枚舉
 export enum CrawlerPlatform {
@@ -87,6 +87,24 @@ class CrawlerService {
   private getAuthHeaders() {
     const token = localStorage.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  /**
+   * 獲取爬蟲統計數據
+   */
+  async getStats(): Promise<any> {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}${API_PREFIX}/crawler/stats`,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('獲取爬蟲統計失敗:', error);
+      throw error;
+    }
   }
 
   /**
