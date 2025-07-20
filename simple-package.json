@@ -1,0 +1,17 @@
+{
+  "name": "simple-file-ai",
+  "version": "1.0.0",
+  "description": "簡單的文件上傳與AI分析系統",
+  "main": "simple-file-ai.js",
+  "scripts": {
+    "start": "node simple-file-ai.js",
+    "dev": "nodemon simple-file-ai.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

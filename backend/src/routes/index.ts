@@ -5,6 +5,7 @@ import aiRoutes from './ai';
 import crawlerRoutes from './crawler';
 import knowledgeRoutes from './knowledgeRoutes';
 import aiAnalysisRoutes from './aiAnalysisRoutes';
+import batchAnalysisRoutes from './batchAnalysisRoutes';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.use('/auth', authRoutes);
 router.use('/documents', documentRoutes);
 router.use('/ai', aiRoutes);
 router.use('/ai-analysis', aiAnalysisRoutes);
+router.use('/batch-analysis', batchAnalysisRoutes);
 router.use('/crawler', crawlerRoutes);
 router.use('/knowledge-cards', knowledgeRoutes);
 

@@ -53,16 +53,10 @@ class ClaudeAnalysisService {
       const indexKey = this.generateIndexKey(analysisResult.title);
 
       // 保存到數據庫
-      const savedResult = await prisma.aIAnalysisResult.create({
+      const savedResult = await prisma.aIAnalysis.create({
         data: {
           userId,
           title: analysisResult.title,
-          originalFiles: JSON.stringify(files.map(f => ({
-            fileName: f.fileName,
-            originalName: f.originalName,
-            fileType: f.fileType,
-            size: f.size
-          }))),
           analysisType,
           summary: analysisResult.summary,
           keyPoints: analysisResult.keyPoints,
@@ -75,7 +69,16 @@ class ClaudeAnalysisService {
             fileCount: files.length,
             totalSize: files.reduce((sum, f) => sum + f.size, 0),
             fileTypes: [...new Set(files.map(f => f.fileType))]
-          })
+          }),
+          originalFiles: {
+            create: files.map(f => ({
+              fileName: f.fileName,
+              originalName: f.originalName,
+              fileType: f.fileType,
+              size: f.size,
+              extractedText: f.content
+            }))
+          }
         }
       });
 
@@ -378,32 +381,20 @@ ${categories.join(', ')}
     const skip = (page - 1) * limit;
     
     const [results, total] = await Promise.all([
-      prisma.aIAnalysisResult.findMany({
+      prisma.aIAnalysis.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        select: {
-          id: true,
-          title: true,
-          summary: true,
-          keywords: true,
-          categories: true,
-          analysisType: true,
-          indexKey: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           originalFiles: true
         }
       }),
-      prisma.aIAnalysisResult.count({ where: { userId } })
+      prisma.aIAnalysis.count({ where: { userId } })
     ]);
 
     return {
-      results: results.map(result => ({
-        ...result,
-        originalFiles: JSON.parse(result.originalFiles)
-      })),
+      results,
       pagination: {
         page,
         limit,
@@ -417,25 +408,25 @@ ${categories.join(', ')}
    * 獲取單個分析結果
    */
   async getAnalysisResult(id: string, userId: string) {
-    const result = await prisma.aIAnalysisResult.findFirst({
-      where: { id, userId }
+    const result = await prisma.aIAnalysis.findFirst({
+      where: { id, userId },
+      include: {
+        originalFiles: true
+      }
     });
 
     if (!result) {
       throw new Error('分析結果不存在');
     }
 
-    return {
-      ...result,
-      originalFiles: JSON.parse(result.originalFiles)
-    };
+    return result;
   }
 
   /**
    * 刪除分析結果
    */
   async deleteAnalysisResult(id: string, userId: string) {
-    const result = await prisma.aIAnalysisResult.findFirst({
+    const result = await prisma.aIAnalysis.findFirst({
       where: { id, userId }
     });
 
@@ -443,7 +434,7 @@ ${categories.join(', ')}
       throw new Error('分析結果不存在');
     }
 
-    await prisma.aIAnalysisResult.delete({
+    await prisma.aIAnalysis.delete({
       where: { id }
     });
 
@@ -457,7 +448,7 @@ ${categories.join(', ')}
     const skip = (page - 1) * limit;
     
     const [results, total] = await Promise.all([
-      prisma.aIAnalysisResult.findMany({
+      prisma.aIAnalysis.findMany({
         where: {
           userId,
           OR: [
@@ -470,9 +461,12 @@ ${categories.join(', ')}
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
+        include: {
+          originalFiles: true
+        }
       }),
-      prisma.aIAnalysisResult.count({
+      prisma.aIAnalysis.count({
         where: {
           userId,
           OR: [
@@ -487,10 +481,7 @@ ${categories.join(', ')}
     ]);
 
     return {
-      results: results.map(result => ({
-        ...result,
-        originalFiles: JSON.parse(result.originalFiles)
-      })),
+      results,
       pagination: {
         page,
         limit,

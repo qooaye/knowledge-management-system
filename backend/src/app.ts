@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import path from 'path';
 import dotenv from 'dotenv';
 
 // 載入環境變數
@@ -102,6 +103,28 @@ app.use('/api', apiRoutes);
 if (process.env.NODE_ENV !== 'production') {
   app.use('/uploads', express.static('uploads'));
 }
+
+// 提供前端靜態文件（單一服務器模式）
+
+// 前端靜態文件路徑
+const frontendBuildPath = path.join(__dirname, '../../../../frontend/build');
+
+// 提供前端靜態資源
+app.use(express.static(frontendBuildPath));
+
+// 處理前端路由（SPA 路由支持）
+app.get('*', (req, res) => {
+  // 如果是 API 請求，返回 404
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ 
+      success: false, 
+      error: 'API endpoint not found' 
+    });
+  }
+  
+  // 其他請求返回前端應用
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+});
 
 // Socket.IO 連接處理
 io.on('connection', (socket) => {

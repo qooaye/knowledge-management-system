@@ -315,10 +315,10 @@ const AnalysisResultList: React.FC<AnalysisResultListProps> = ({
         <div className="search-section" style={{ marginBottom: 16 }}>
           <Space style={{ width: '100%', justifyContent: 'space-between' }}>
             <Search
-              placeholder="搜索分析標題、關鍵詞或內容..."
+              placeholder="搜索分析標題、關鍵詞、索引鍵(indexKey)或內容..."
               allowClear
               onSearch={handleSearch}
-              style={{ width: 400 }}
+              style={{ width: 500 }}
               enterButton={<SearchOutlined />}
             />
             <Button
@@ -343,10 +343,10 @@ const AnalysisResultList: React.FC<AnalysisResultListProps> = ({
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="暫無AI分析結果"
+                description="暫無AI分析重點"
               >
                 <Text type="secondary">
-                  上傳文件並進行AI分析後，結果將在這裡顯示
+                  上傳文件並進行AI分析後，分析重點將在這裡顯示
                 </Text>
               </Empty>
             )

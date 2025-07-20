@@ -53,7 +53,7 @@ const DocumentsPage: React.FC = () => {
           tab={
             <span>
               <UnorderedListOutlined />
-              AI分析結果
+              AI分析重點
             </span>
           }
           key="results"

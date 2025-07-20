@@ -9,7 +9,8 @@ import {
   Space,
   Alert,
   List,
-  Tag
+  Tag,
+  Input
 } from 'antd';
 import {
   CloudUploadOutlined,
@@ -24,6 +25,7 @@ const { Dragger } = Upload;
 
 interface FileUploadAnalysisProps {
   onAnalysisComplete?: (analysisId: string) => void;
+  onListUpdate?: () => void;
 }
 
 interface UploadedFile {
@@ -35,11 +37,14 @@ interface UploadedFile {
 }
 
 const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({ 
-  onAnalysisComplete 
+  onAnalysisComplete,
+  onListUpdate 
 }) => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [analysisTitle, setAnalysisTitle] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 支援的文件類型
@@ -59,7 +64,7 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
     { type: 'TXT', icon: '📄', desc: '純文字檔' },
     { type: 'Markdown', icon: '📝', desc: 'Markdown文件' },
     { type: 'HTML', icon: '🌐', desc: 'HTML網頁' },
-    { type: '圖片', icon: '🖼️', desc: 'JPG, PNG, GIF等圖片（OCR識別）' }
+    { type: '圖片', icon: '🖼️', desc: 'JPG, PNG, GIF等圖片' }
   ];
 
   /**
@@ -125,6 +130,7 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
     }
 
     setUploading(true);
+    setAnalyzing(false);
     setProgress(0);
 
     try {
@@ -133,38 +139,48 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
       files.forEach(f => dt.items.add(f.file));
       const fileList = dt.files;
 
-      // 模擬進度更新
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + Math.random() * 10;
-        });
-      }, 500);
+      // 第一階段：上傳文件
+      message.loading('正在上傳文件...', 0);
+      setProgress(20);
 
-      const result = await aiAnalysisService.uploadAndAnalyze(fileList);
-
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      message.success(`AI分析完成！處理了 ${result.fileCount} 個文件`);
+      const uploadResult = await aiAnalysisService.uploadBatchFiles(fileList);
       
-      // 清空文件列表
+      setProgress(50);
+      setUploading(false);
+      setAnalyzing(true);
+      
+      message.destroy();
+      message.loading('AI 正在分析中，請稍候...', 0);
+
+      // 第二階段：AI 分析
+      const analysisResult = await aiAnalysisService.performBatchAnalysis(
+        uploadResult.batchId,
+        uploadResult.indexKey,
+        analysisTitle || undefined
+      );
+
+      setProgress(100);
+      message.destroy();
+      message.success(`AI分析完成！處理了 ${analysisResult.fileCount} 個文件`);
+      
+      // 清空文件列表和標題
       setFiles([]);
+      setAnalysisTitle('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
       // 回調通知父組件
-      onAnalysisComplete?.(result.analysisId);
+      onAnalysisComplete?.(analysisResult.analysisId);
+      onListUpdate?.();
 
     } catch (error) {
       console.error('AI分析失敗:', error);
+      message.destroy();
       message.error(`AI分析失敗: ${(error as Error).message}`);
     } finally {
       setUploading(false);
+      setAnalyzing(false);
       setProgress(0);
     }
   };
@@ -199,7 +215,7 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
                 handleFileSelect(dt.files);
               }
             }}
-            disabled={uploading}
+            disabled={uploading || analyzing}
             className="upload-dragger"
           >
             <p className="ant-upload-drag-icon">
@@ -209,7 +225,7 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
               <strong>拖拽文件到此處或點擊選擇文件</strong>
             </p>
             <p className="ant-upload-hint">
-              支援單個或多個文件上傳，將進行AI批次分析
+              支援多檔案批次AI分析
             </p>
           </Dragger>
 
@@ -224,21 +240,21 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
           />
         </div>
 
-        {/* 支援格式說明 */}
-        <Alert
-          type="info"
-          message="支援的文件格式"
-          description={
-            <div className="format-grid" style={{ marginTop: 8 }}>
-              {supportedFormats.map((format, index) => (
-                <Tag key={index} className="format-tag">
-                  {format.icon} {format.type}
-                </Tag>
-              ))}
-            </div>
-          }
-          style={{ marginTop: 16 }}
-        />
+
+        {/* 分析標題輸入 */}
+        {files.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <Title level={5}>分析標題（可選）</Title>
+            <Input
+              placeholder="為這次分析輸入一個有意義的標題，留空將自動生成"
+              value={analysisTitle}
+              onChange={(e) => setAnalysisTitle(e.target.value)}
+              disabled={uploading || analyzing}
+              maxLength={100}
+              showCount
+            />
+          </div>
+        )}
 
         {/* 已選文件列表 */}
         {files.length > 0 && (
@@ -251,7 +267,7 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
                 type="link" 
                 danger 
                 onClick={handleClearFiles}
-                disabled={uploading}
+                disabled={uploading || analyzing}
               >
                 清空全部
               </Button>
@@ -292,11 +308,11 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
           </div>
         )}
 
-        {/* 分析進度 */}
-        {uploading && (
+        {/* 上傳和分析進度 */}
+        {(uploading || analyzing) && (
           <div className="progress-section" style={{ marginTop: 24 }}>
             <Title level={5}>
-              <RobotOutlined spin /> AI正在分析中...
+              <RobotOutlined spin /> {uploading ? '正在上傳文件...' : 'AI正在分析中...'}
             </Title>
             <Progress 
               percent={Math.round(progress)} 
@@ -307,7 +323,10 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
               }}
             />
             <Text type="secondary">
-              正在使用免費AI模型深度分析您的文件內容，請稍候...
+              {uploading 
+                ? '正在上傳您的文件到服務器...' 
+                : '正在使用免費AI模型深度分析您的文件內容，請稍候...'
+              }
             </Text>
           </div>
         )}
@@ -320,10 +339,10 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
               size="large"
               icon={<RobotOutlined />}
               onClick={handleStartAnalysis}
-              disabled={files.length === 0 || uploading}
-              loading={uploading}
+              disabled={files.length === 0 || uploading || analyzing}
+              loading={uploading || analyzing}
             >
-              {uploading ? 'AI分析中...' : `開始AI分析 (${files.length}個文件)`}
+              {uploading ? '上傳中...' : analyzing ? 'AI分析中...' : `開始AI分析 (${files.length}個文件)`}
             </Button>
           </Space>
         </div>
@@ -334,10 +353,10 @@ const FileUploadAnalysis: React.FC<FileUploadAnalysisProps> = ({
           message="AI分析功能"
           description={
             <div>
-              <p>• <strong>智能內容提取</strong>：自動識別和提取文件中的關鍵信息</p>
               <p>• <strong>深度分析</strong>：使用免費AI模型進行內容摘要、重點整理和洞察分析</p>
               <p>• <strong>Markdown報告</strong>：生成結構化的分析報告，可下載保存</p>
               <p>• <strong>批次處理</strong>：支援多文件同時分析，提供綜合性報告</p>
+              <p>• <strong>索引查詢</strong>：建立日期索引系統，方便後續查詢和管理</p>
             </div>
           }
           style={{ marginTop: 16 }}

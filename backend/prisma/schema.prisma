@@ -26,6 +26,7 @@ model User {
   crawlerTasks   CrawlerTask[]
   knowledgeCards KnowledgeCard[]
   refreshTokens  RefreshToken[]
+  aiAnalyses     AIAnalysis[]
 
   @@map("users")
 }
@@ -199,4 +200,46 @@ model SearchIndex {
 
   @@unique([type, resourceId])
   @@map("search_indexes")
+}
+
+// AI分析結果表
+model AIAnalysis {
+  id              String   @id @default(cuid())
+  userId          String
+  title           String
+  summary         String
+  keyPoints       String   // Markdown格式的重點整理
+  insights        String   // 深度洞察
+  keywords        String   // 關鍵詞，用逗號分隔
+  categories      String   // 分類標籤，用逗號分隔
+  analysisType    String   // 'single' 或 'batch'
+  indexKey        String   @unique // 用於查詢的唯一索引鍵
+  markdownContent String   // 完整的Markdown格式內容
+  metadata        String?  // 額外的元數據，JSON格式
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 關聯
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalFiles   AIAnalysisFile[]
+
+  @@map("ai_analyses")
+}
+
+// AI分析原始文件表
+model AIAnalysisFile {
+  id           String     @id @default(cuid())
+  analysisId   String
+  fileName     String     // 存儲的文件名
+  originalName String     // 原始文件名
+  fileType     String     // MIME類型
+  size         Int        // 文件大小
+  path         String?    // 文件存儲路徑
+  extractedText String?   // 提取的文本內容
+  createdAt    DateTime   @default(now())
+
+  // 關聯
+  analysis     AIAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@map("ai_analysis_files")
 }

@@ -64,7 +64,7 @@ export class AuthController {
     await authService.logout(refreshToken);
 
     logger.info('User logged out successfully', {
-      userId: req.user?.id,
+      userId: (req as any).user?.id,
       ip: req.ip,
     });
 
@@ -73,7 +73,7 @@ export class AuthController {
 
   // 獲取當前用戶信息
   getCurrentUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const user = await authService.getCurrentUser(userId);
 
@@ -82,7 +82,7 @@ export class AuthController {
 
   // 更新用戶資料
   updateProfile = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { username, avatar } = req.body;
 
     const user = await authService.updateProfile(userId, {
@@ -100,7 +100,7 @@ export class AuthController {
 
   // 修改密碼
   changePassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { currentPassword, newPassword } = req.body;
 
     await authService.changePassword(userId, currentPassword, newPassword);
@@ -142,7 +142,7 @@ export class AuthController {
 
   // 停用帳號
   deactivateAccount = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     await authService.deactivateAccount(userId);
 
@@ -169,7 +169,7 @@ export class AuthController {
 
     logger.info('User account reactivated', {
       userId,
-      adminId: req.user?.id,
+      adminId: (req as any).user?.id,
       ip: req.ip,
     });
 

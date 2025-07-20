@@ -36,16 +36,35 @@ export interface PaginatedResults {
 }
 
 export interface UploadResponse {
-  analysisId: string;
+  batchId: string;
+  indexKey: string;
   fileCount: number;
-  analysisType: 'single' | 'batch';
+  files: Array<{
+    fileName: string;
+    originalName: string;
+    fileType: string;
+    size: number;
+  }>;
+}
+
+export interface AnalysisResponse {
+  analysisId: string;
+  indexKey: string;
+  title: string;
+  summary: string;
+  keyPoints: string;
+  insights: string;
+  keywords: string;
+  categories: string;
+  fileCount: number;
+  createdAt: string;
 }
 
 class AIAnalysisService {
   /**
-   * 上傳文件並進行AI分析
+   * 批次上傳文件
    */
-  async uploadAndAnalyze(files: FileList): Promise<UploadResponse> {
+  async uploadBatchFiles(files: FileList): Promise<UploadResponse> {
     const formData = new FormData();
     
     // 添加所有文件到FormData
@@ -53,14 +72,52 @@ class AIAnalysisService {
       formData.append('files', file);
     });
 
-    const response = await apiRequest.post<UploadResponse>('/ai-analysis/upload', formData, {
+    const response = await apiRequest.post<{
+      success: boolean;
+      data: UploadResponse;
+      message: string;
+    }>('/batch-analysis/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
       timeout: 60000, // 60秒超時
     });
 
-    return response.data;
+    return response.data.data;
+  }
+
+  /**
+   * 執行 AI 批次分析
+   */
+  async performBatchAnalysis(batchId: string, indexKey: string, title?: string): Promise<AnalysisResponse> {
+    const response = await apiRequest.post<{
+      success: boolean;
+      data: AnalysisResponse;
+      message: string;
+    }>('/batch-analysis/analyze', {
+      batchId,
+      indexKey,
+      title
+    });
+
+    return response.data.data;
+  }
+
+  /**
+   * 上傳文件並進行AI分析（整合版）
+   */
+  async uploadAndAnalyze(files: FileList, title?: string): Promise<AnalysisResponse> {
+    // 先上傳文件
+    const uploadResult = await this.uploadBatchFiles(files);
+    
+    // 然後執行分析
+    const analysisResult = await this.performBatchAnalysis(
+      uploadResult.batchId, 
+      uploadResult.indexKey,
+      title
+    );
+
+    return analysisResult;
   }
 
   /**
@@ -70,26 +127,43 @@ class AIAnalysisService {
     page?: number;
     limit?: number;
     search?: string;
+    category?: string;
   }): Promise<PaginatedResults> {
     const queryParams = new URLSearchParams();
     
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.category) queryParams.append('category', params.category);
 
-    const response = await apiRequest.get<PaginatedResults>(
-      `/ai-analysis?${queryParams.toString()}`
-    );
+    const response = await apiRequest.get<{
+      success: boolean;
+      data: {
+        analyses: AIAnalysisResult[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          pages: number;
+        };
+      };
+    }>(`/batch-analysis/list?${queryParams.toString()}`);
 
-    return response.data;
+    return {
+      results: response.data.data.analyses,
+      pagination: response.data.data.pagination
+    };
   }
 
   /**
    * 獲取單個AI分析結果詳情
    */
   async getAnalysisResult(id: string): Promise<AIAnalysisDetail> {
-    const response = await apiRequest.get<AIAnalysisDetail>(`/ai-analysis/${id}`);
-    return response.data;
+    const response = await apiRequest.get<{
+      success: boolean;
+      data: AIAnalysisDetail;
+    }>(`/batch-analysis/${id}`);
+    return response.data.data;
   }
 
   /**
@@ -97,7 +171,7 @@ class AIAnalysisService {
    */
   async downloadMarkdown(id: string): Promise<void> {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/ai-analysis/${id}/download`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/batch-analysis/${id}/download`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -139,7 +213,7 @@ class AIAnalysisService {
    * 刪除AI分析結果
    */
   async deleteAnalysisResult(id: string): Promise<void> {
-    await apiRequest.delete(`/ai-analysis/${id}`);
+    await apiRequest.delete(`/batch-analysis/${id}`);
   }
 
   /**

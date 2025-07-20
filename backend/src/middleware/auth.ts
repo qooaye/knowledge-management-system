@@ -174,7 +174,7 @@ export const requireOwnership = (resourceIdParam: string = 'id') => {
     }
 
     const resourceId = req.params[resourceIdParam];
-    const userId = req.user.id;
+    const userId = (req as any).user.id;
 
     // 這裡需要根據具體資源類型進行檢查
     // 例如：檢查文件、爬蟲任務、知識卡片等的所有權

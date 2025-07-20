@@ -1,7 +1,7 @@
 import express from 'express';
 import { knowledgeController } from '../controllers/knowledgeController';
 import { authenticateToken } from '../middleware/auth';
-import { validateRequest } from '../middleware/validation';
+import { validate } from '../middleware/validation';
 import { z } from 'zod';
 
 const router = express.Router();
@@ -44,10 +44,10 @@ router.use(authenticateToken);
 router.get('/', knowledgeController.getKnowledgeCards);
 
 // POST /api/knowledge-cards - 創建知識卡片
-router.post('/', validateRequest(createKnowledgeCardSchema), knowledgeController.createKnowledgeCard);
+router.post('/', validate(createKnowledgeCardSchema), knowledgeController.createKnowledgeCard);
 
 // GET /api/knowledge-cards/search - 搜索知識卡片
-router.get('/search', validateRequest(searchKnowledgeCardsSchema), knowledgeController.searchKnowledgeCards);
+router.get('/search', validate(searchKnowledgeCardsSchema), knowledgeController.searchKnowledgeCards);
 
 // GET /api/knowledge-cards/connections - 獲取知識卡片關聯
 router.get('/connections', knowledgeController.getKnowledgeConnections);
@@ -56,7 +56,7 @@ router.get('/connections', knowledgeController.getKnowledgeConnections);
 router.get('/:id', knowledgeController.getKnowledgeCard);
 
 // PUT /api/knowledge-cards/:id - 更新知識卡片
-router.put('/:id', validateRequest(updateKnowledgeCardSchema), knowledgeController.updateKnowledgeCard);
+router.put('/:id', validate(updateKnowledgeCardSchema), knowledgeController.updateKnowledgeCard);
 
 // DELETE /api/knowledge-cards/:id - 刪除知識卡片
 router.delete('/:id', knowledgeController.deleteKnowledgeCard);

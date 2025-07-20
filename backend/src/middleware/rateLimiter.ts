@@ -133,7 +133,7 @@ export const createRedisRateLimiter = (options: {
 
 // 用戶特定限流
 export const userLimiter = createRedisRateLimiter({
-  keyGenerator: (req: Request) => `user:${req.user?.id || req.ip}`,
+  keyGenerator: (req: Request) => `user:${(req as any).user?.id || req.ip}`,
   windowMs: 60 * 60 * 1000, // 1 小時
   max: 1000, // 每小時 1000 次請求
   message: 'Too many requests for this user, please try again later.',
@@ -150,7 +150,7 @@ export const ipLimiter = createRedisRateLimiter({
 // 端點特定限流
 export const endpointLimiter = (endpoint: string, max: number, windowMs: number) => {
   return createRedisRateLimiter({
-    keyGenerator: (req: Request) => `endpoint:${endpoint}:${req.user?.id || req.ip}`,
+    keyGenerator: (req: Request) => `endpoint:${endpoint}:${(req as any).user?.id || req.ip}`,
     windowMs,
     max,
     message: `Too many requests to ${endpoint}, please try again later.`,
@@ -160,7 +160,7 @@ export const endpointLimiter = (endpoint: string, max: number, windowMs: number)
 // 動態限流（根據用戶類型調整）
 export const dynamicLimiter = createRedisRateLimiter({
   keyGenerator: (req: Request) => {
-    const userId = req.user?.id;
+    const userId = (req as any).user?.id;
     const userType = 'regular'; // 這裡可以擴展用戶類型系統
     return `dynamic:${userType}:${userId || req.ip}`;
   },
@@ -206,7 +206,7 @@ export const rateLimiter = (limitType: string) => {
   switch (limitType) {
     case 'createCrawlerTask':
       return createRedisRateLimiter({
-        keyGenerator: (req: Request) => `crawler:create:${req.user?.id || req.ip}`,
+        keyGenerator: (req: Request) => `crawler:create:${(req as any).user?.id || req.ip}`,
         windowMs: 60 * 60 * 1000, // 1 小時
         max: 10, // 每小時最多創建 10 個爬蟲任務
         message: 'Too many crawler tasks created, please try again later.',
@@ -214,7 +214,7 @@ export const rateLimiter = (limitType: string) => {
     
     case 'runCrawlerTask':
       return createRedisRateLimiter({
-        keyGenerator: (req: Request) => `crawler:run:${req.user?.id || req.ip}`,
+        keyGenerator: (req: Request) => `crawler:run:${(req as any).user?.id || req.ip}`,
         windowMs: 60 * 60 * 1000, // 1 小時
         max: 20, // 每小時最多執行 20 次爬蟲任務
         message: 'Too many crawler task executions, please try again later.',
@@ -225,7 +225,7 @@ export const rateLimiter = (limitType: string) => {
     case 'getCrawlerResults':
     case 'getCrawlerStats':
       return createRedisRateLimiter({
-        keyGenerator: (req: Request) => `crawler:read:${req.user?.id || req.ip}`,
+        keyGenerator: (req: Request) => `crawler:read:${(req as any).user?.id || req.ip}`,
         windowMs: 60 * 1000, // 1 分鐘
         max: 60, // 每分鐘最多 60 次讀取請求
         message: 'Too many read requests, please try again later.',
@@ -235,10 +235,50 @@ export const rateLimiter = (limitType: string) => {
     case 'deleteCrawlerTask':
     case 'stopCrawlerTask':
       return createRedisRateLimiter({
-        keyGenerator: (req: Request) => `crawler:modify:${req.user?.id || req.ip}`,
+        keyGenerator: (req: Request) => `crawler:modify:${(req as any).user?.id || req.ip}`,
         windowMs: 60 * 1000, // 1 分鐘
         max: 30, // 每分鐘最多 30 次修改請求
         message: 'Too many modify requests, please try again later.',
+      });
+    
+    case 'uploadFiles':
+      return createRedisRateLimiter({
+        keyGenerator: (req: Request) => `upload:${(req as any).user?.id || req.ip}`,
+        windowMs: 60 * 60 * 1000, // 1 小時
+        max: 20, // 每小時最多 20 次上傳
+        message: 'Too many upload requests, please try again later.',
+      });
+    
+    case 'aiAnalysis':
+      return createRedisRateLimiter({
+        keyGenerator: (req: Request) => `ai:analysis:${(req as any).user?.id || req.ip}`,
+        windowMs: 60 * 60 * 1000, // 1 小時
+        max: 10, // 每小時最多 10 次 AI 分析
+        message: 'Too many AI analysis requests, please try again later.',
+      });
+    
+    case 'download':
+      return createRedisRateLimiter({
+        keyGenerator: (req: Request) => `download:${(req as any).user?.id || req.ip}`,
+        windowMs: 60 * 60 * 1000, // 1 小時
+        max: 100, // 每小時最多 100 次下載
+        message: 'Too many download requests, please try again later.',
+      });
+    
+    case 'deleteData':
+      return createRedisRateLimiter({
+        keyGenerator: (req: Request) => `delete:${(req as any).user?.id || req.ip}`,
+        windowMs: 60 * 60 * 1000, // 1 小時
+        max: 50, // 每小時最多 50 次刪除
+        message: 'Too many delete requests, please try again later.',
+      });
+    
+    case 'general':
+      return createRedisRateLimiter({
+        keyGenerator: (req: Request) => `general:${(req as any).user?.id || req.ip}`,
+        windowMs: 60 * 1000, // 1 分鐘
+        max: 60, // 每分鐘最多 60 次一般請求
+        message: 'Too many requests, please try again later.',
       });
     
     default:

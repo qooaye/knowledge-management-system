@@ -9,7 +9,7 @@ const logger = createLogger('Knowledge Controller');
 export class KnowledgeController {
   // 獲取知識卡片列表
   getKnowledgeCards = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { category, tags, limit = 20, offset = 0 } = req.query;
 
     const filters = {
@@ -32,7 +32,7 @@ export class KnowledgeController {
 
   // 創建知識卡片
   createKnowledgeCard = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { title, content, category, tags, sourceDocumentId, sourceCrawlerResultId } = req.body;
 
     const knowledgeCard = await knowledgeService.createKnowledgeCard({
@@ -56,7 +56,7 @@ export class KnowledgeController {
 
   // 獲取單個知識卡片
   getKnowledgeCard = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { id } = req.params;
 
     const knowledgeCard = await knowledgeService.getKnowledgeCard(userId, id);
@@ -71,7 +71,7 @@ export class KnowledgeController {
 
   // 更新知識卡片
   updateKnowledgeCard = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { id } = req.params;
     const updateData = req.body;
 
@@ -88,7 +88,7 @@ export class KnowledgeController {
 
   // 刪除知識卡片
   deleteKnowledgeCard = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { id } = req.params;
 
     await knowledgeService.deleteKnowledgeCard(userId, id);
@@ -103,7 +103,7 @@ export class KnowledgeController {
 
   // 搜索知識卡片
   searchKnowledgeCards = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { q, category, tags, limit = 20, offset = 0 } = req.query;
 
     const searchParams = {
@@ -128,7 +128,7 @@ export class KnowledgeController {
 
   // 獲取知識卡片關聯
   getKnowledgeConnections = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { cardId, limit = 10 } = req.query;
 
     const connections = await knowledgeService.getKnowledgeConnections(userId, {
@@ -147,7 +147,7 @@ export class KnowledgeController {
 
   // 獲取知識統計
   getKnowledgeStats = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const stats = await knowledgeService.getKnowledgeStats(userId);
 
@@ -161,7 +161,7 @@ export class KnowledgeController {
 
   // 根據標籤獲取知識卡片
   getKnowledgeCardsByTags = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
     const { tags } = req.query;
 
     if (!tags) {
@@ -182,7 +182,7 @@ export class KnowledgeController {
 
   // 獲取知識卡片分類
   getKnowledgeCategories = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const categories = await knowledgeService.getKnowledgeCategories(userId);
 

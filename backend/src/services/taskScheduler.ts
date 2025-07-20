@@ -214,8 +214,8 @@ export class TaskScheduler {
                 relevanceScore: relevanceAnalysis.relevanceScore,
                 relevanceReason: relevanceAnalysis.reasoning,
                 summary: relevanceAnalysis.summary,
-                keyPoints: relevanceAnalysis.keyPoints,
-                tags: relevanceAnalysis.tags,
+                keyPoints: Array.isArray(relevanceAnalysis.keyPoints) ? relevanceAnalysis.keyPoints.join(',') : relevanceAnalysis.keyPoints,
+                tags: Array.isArray(relevanceAnalysis.tags) ? relevanceAnalysis.tags.join(',') : relevanceAnalysis.tags,
               },
             });
 

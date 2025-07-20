@@ -52,8 +52,10 @@ const App: React.FC = () => {
     <MainLayout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/documents/*" element={<DocumentManagement />} />
+        {/* Documents route redirects to AI analysis */}
+        <Route path="/documents/*" element={<Navigate to="/ai-analysis" replace />} />
         <Route path="/ai-analysis" element={<AIAnalysis />} />
+        <Route path="/document-management" element={<DocumentManagement />} />
         <Route path="/crawler/*" element={<CrawlerCenter />} />
         <Route path="/knowledge/*" element={<KnowledgeBase />} />
         <Route path="/settings" element={<Settings />} />

@@ -40,14 +40,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: '儀表板',
     },
     {
-      key: '/documents',
-      icon: <RobotOutlined />,
-      label: '文件上傳與AI分析重點',
-    },
-    {
       key: '/ai-analysis',
       icon: <RobotOutlined />,
-      label: 'AI 分析',
+      label: '文件上傳與AI分析重點',
     },
     {
       key: '/crawler',

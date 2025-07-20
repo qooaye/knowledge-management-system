@@ -259,7 +259,17 @@ export class StorageService {
 export const createStorageService = (): StorageService => {
   const storageType = process.env.UPLOAD_STORAGE_TYPE || 'minio';
   
-  if (storageType === 'minio') {
+  if (storageType === 'local') {
+    // 本地存儲模式，使用基本配置
+    return new StorageService({
+      region: 'local',
+      credentials: {
+        accessKeyId: 'local',
+        secretAccessKey: 'local',
+      },
+      bucket: 'local-storage',
+    });
+  } else if (storageType === 'minio') {
     return new StorageService({
       endpoint: `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`,
       region: 'us-east-1',

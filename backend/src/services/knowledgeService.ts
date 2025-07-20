@@ -204,7 +204,7 @@ export class KnowledgeService {
         tags: knowledgeCard.tags ? knowledgeCard.tags.split(',').filter(Boolean) : [],
       };
 
-      return processedCard as KnowledgeCard;
+      return processedCard as any;
     } catch (error) {
       logger.error('Failed to create knowledge card', error, { userId: data.userId });
       throw error;
@@ -255,7 +255,7 @@ export class KnowledgeService {
         tags: knowledgeCard.tags ? knowledgeCard.tags.split(',').filter(Boolean) : [],
       };
 
-      return processedCard as KnowledgeCard;
+      return processedCard as any;
     } catch (error) {
       logger.error('Failed to get knowledge card', error, { userId, cardId });
       throw error;
@@ -326,7 +326,7 @@ export class KnowledgeService {
         tags: knowledgeCard.tags ? knowledgeCard.tags.split(',').filter(Boolean) : [],
       };
 
-      return processedCard as KnowledgeCard;
+      return processedCard as any;
     } catch (error) {
       logger.error('Failed to update knowledge card', error, { userId, cardId });
       throw error;

@@ -54,7 +54,7 @@ export class CrawlerController {
    */
   async createTask(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       if (!userId) {
         return res.status(401).json({
           success: false,
@@ -70,8 +70,8 @@ export class CrawlerController {
           userId,
           name: validatedData.name,
           platform: validatedData.platform,
-          keywords: validatedData.keywords,
-          config: validatedData.config || {},
+          keywords: validatedData.keywords.join(','),
+          config: JSON.stringify(validatedData.config || {}),
           status: 'PENDING',
           scheduledAt: validatedData.scheduledAt ? new Date(validatedData.scheduledAt) : null,
         },
@@ -112,7 +112,7 @@ export class CrawlerController {
    */
   async getTasks(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       if (!userId) {
         return res.status(401).json({
           success: false,
@@ -177,7 +177,7 @@ export class CrawlerController {
    */
   async getTask(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       const taskId = req.params.id;
       
       if (!userId) {
@@ -240,7 +240,7 @@ export class CrawlerController {
    */
   async updateTask(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       const taskId = req.params.id;
       const validatedData = updateCrawlerTaskSchema.parse(req.body);
 
@@ -304,7 +304,7 @@ export class CrawlerController {
    */
   async deleteTask(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       const taskId = req.params.id;
 
       // 檢查任務是否存在且屬於當前用戶
@@ -350,7 +350,7 @@ export class CrawlerController {
    */
   async runTask(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       const taskId = req.params.id;
 
       // 檢查任務是否存在且屬於當前用戶
@@ -401,7 +401,7 @@ export class CrawlerController {
    */
   async stopTask(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       const taskId = req.params.id;
 
       // 檢查任務是否存在且屬於當前用戶
@@ -451,7 +451,7 @@ export class CrawlerController {
    */
   async getResults(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
       const taskId = req.params.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -510,7 +510,7 @@ export class CrawlerController {
    */
   async getStats(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req as any).user?.id;
 
       const stats = await prisma.crawlerTask.groupBy({
         by: ['status'],

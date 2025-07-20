@@ -5,63 +5,36 @@ import {
   Breadcrumb,
   Card,
   Tabs,
-  Upload,
-  Button,
-  message,
   Space,
 } from 'antd';
 import {
   RobotOutlined,
   FileTextOutlined,
-  UploadOutlined,
+  HistoryOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
-import type { UploadFile } from 'antd/es/upload/interface';
-import AIAnalysisPanel from '../components/ai/AIAnalysisPanel';
-import { documentService } from '../services/documentService';
-import { useAppSelector } from '../store/hooks';
+import FileUploadAnalysis from '../components/ai-analysis/FileUploadAnalysis';
+import AnalysisResultList from '../components/ai-analysis/AnalysisResultList';
 
 const { Content } = Layout;
 const { Title, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
 const AIAnalysis: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('text');
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  
-  const { user } = useAppSelector((state) => state.auth);
+  const [activeTab, setActiveTab] = useState('upload');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // 處理文件上傳
-  const handleUpload = async (file: File) => {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('files', file);
-
-      const response = await documentService.uploadDocument(file);
-      
-      if (response.data?.data) {
-        const uploadedDoc = response.data.data;
-        setSelectedDocumentId(uploadedDoc.id);
-        setActiveTab('document');
-        message.success(`文檔 "${uploadedDoc.originalName || uploadedDoc.filename}" 上傳成功，可以開始分析`);
-      }
-    } catch (error: any) {
-      message.error(error.message || '文檔上傳失敗');
-    } finally {
-      setUploading(false);
-    }
+  // 處理分析完成事件
+  const handleAnalysisComplete = (analysisId: string) => {
+    console.log('Analysis completed:', analysisId);
+    // 切換到結果頁面並刷新列表
+    setActiveTab('results');
+    setRefreshTrigger(prev => prev + 1);
   };
 
-  const uploadProps = {
-    name: 'file',
-    accept: '.pdf,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp,.xlsx,.xls,.csv,.json,.epub,.zip,.rar,.7z',
-    beforeUpload: (file: File) => {
-      handleUpload(file);
-      return false; // 阻止默認上傳
-    },
-    showUploadList: false,
+  // 處理列表更新事件
+  const handleListUpdate = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -71,18 +44,18 @@ const AIAnalysis: React.FC = () => {
           <Breadcrumb.Item>
             <HomeOutlined />
           </Breadcrumb.Item>
-          <Breadcrumb.Item>AI 分析</Breadcrumb.Item>
+          <Breadcrumb.Item>文件上傳與AI分析重點</Breadcrumb.Item>
         </Breadcrumb>
 
         <div style={{ background: '#fff', padding: 24, minHeight: 280 }}>
           <div style={{ marginBottom: 24 }}>
             <Title level={2}>
               <RobotOutlined style={{ marginRight: 8 }} />
-              AI 智能分析
+              文件上傳與AI分析重點
             </Title>
             <Paragraph>
-              利用人工智能技術對文檔進行深度分析，包括摘要生成、關鍵詞提取、標籤分類、情感分析等功能。
-              支援多種文檔格式，提供準確的分析結果。
+              批次上傳多種格式文件，使用AI進行深度分析，生成結構化的Markdown報告。
+              支援PDF、Word、Excel、圖片、文本等多種格式，提供智能化的內容提取和分析服務。
             </Paragraph>
           </div>
 
@@ -96,100 +69,57 @@ const AIAnalysis: React.FC = () => {
                 tab={
                   <Space>
                     <FileTextOutlined />
-                    文本分析
+                    文件上傳與分析
                   </Space>
                 }
-                key="text"
+                key="upload"
               >
-                <AIAnalysisPanel
-                  onAnalysisComplete={(result) => {
-                    console.log('Analysis completed:', result);
-                  }}
+                <FileUploadAnalysis
+                  onAnalysisComplete={handleAnalysisComplete}
+                  onListUpdate={handleListUpdate}
                 />
               </TabPane>
 
               <TabPane
                 tab={
                   <Space>
-                    <UploadOutlined />
-                    文檔分析
+                    <HistoryOutlined />
+                    AI分析重點
                   </Space>
                 }
-                key="document"
+                key="results"
               >
-                <div style={{ marginBottom: 24 }}>
-                  <Card size="small">
-                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                      <Upload {...uploadProps}>
-                        <Button
-                          icon={<UploadOutlined />}
-                          size="large"
-                          loading={uploading}
-                        >
-                          {uploading ? '上傳中...' : '選擇文檔進行分析'}
-                        </Button>
-                      </Upload>
-                      <div style={{ marginTop: 16 }}>
-                        <Typography.Text type="secondary">
-                          支援 PDF, DOCX, TXT, MD, 圖片（OCR）, Excel, JSON 等多種格式
-                        </Typography.Text>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-                {selectedDocumentId && (
-                  <AIAnalysisPanel
-                    documentId={selectedDocumentId}
-                    onAnalysisComplete={(result) => {
-                      console.log('Document analysis completed:', result);
-                    }}
-                  />
-                )}
-
-                {!selectedDocumentId && (
-                  <Card>
-                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                      <FileTextOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
-                      <div style={{ marginTop: 16 }}>
-                        <Typography.Text type="secondary">
-                          請先上傳一個文檔以開始 AI 分析
-                        </Typography.Text>
-                      </div>
-                    </div>
-                  </Card>
-                )}
+                <AnalysisResultList refreshTrigger={refreshTrigger} />
               </TabPane>
             </Tabs>
           </Card>
 
           {/* 功能說明 */}
-          <Card title="AI 分析功能說明" style={{ marginTop: 24 }}>
+          <Card title="批次AI分析功能說明" style={{ marginTop: 24 }}>
             <div>
-              <Title level={4}>🤖 智能分析能力</Title>
+              <Title level={4}>🤖 批次智能分析能力</Title>
               <ul>
-                <li><strong>文檔摘要</strong>：自動生成簡潔準確的文檔摘要</li>
-                <li><strong>關鍵詞提取</strong>：識別文檔中最重要的關鍵詞</li>
-                <li><strong>標籤分類</strong>：自動生成文檔分類標籤</li>
-                <li><strong>情感分析</strong>：分析文檔的情感傾向和態度</li>
-                <li><strong>實體識別</strong>：識別人物、組織、地點等重要實體</li>
-                <li><strong>主題分析</strong>：提取文檔的主要討論話題</li>
+                <li><strong>批次上傳</strong>：一次性上傳多個不同格式的文件</li>
+                <li><strong>深度分析</strong>：綜合分析多個文件，生成統一的洞察報告</li>
+                <li><strong>Markdown報告</strong>：生成結構化的分析報告，支援下載保存</li>
+                <li><strong>分類標籤</strong>：自動生成分類標籤和關鍵詞</li>
+                <li><strong>索引檢索</strong>：為每次分析生成唯一索引，便於後續查詢</li>
               </ul>
 
               <Title level={4}>📄 支援格式</Title>
               <ul>
-                <li><strong>文檔格式</strong>：PDF, DOCX, TXT, Markdown, RTF, HTML</li>
-                <li><strong>圖片格式</strong>：JPG, PNG, GIF, BMP, TIFF, WebP（支援 OCR）</li>
-                <li><strong>表格格式</strong>：XLSX, XLS, CSV</li>
-                <li><strong>其他格式</strong>：JSON, EPUB, 壓縮文件</li>
+                <li><strong>文檔格式</strong>：PDF, Word (.doc/.docx), TXT, Markdown, HTML</li>
+                <li><strong>圖片格式</strong>：JPG, PNG, GIF, BMP, TIFF</li>
+                <li><strong>表格格式</strong>：Excel (.xls/.xlsx)</li>
+                <li><strong>批次處理</strong>：支援混合格式文件同時分析</li>
               </ul>
 
-              <Title level={4}>⚡ 使用建議</Title>
+              <Title level={4}>⚡ 使用流程</Title>
               <ul>
-                <li>文檔內容越豐富，分析結果越準確</li>
-                <li>建議文檔長度在 100-10000 字之間效果最佳</li>
-                <li>圖片文檔請確保文字清晰以提高 OCR 識別準確度</li>
-                <li>可根據需求調整摘要長度和關鍵詞數量</li>
+                <li><strong>步驟1</strong>：在「文件上傳與分析」頁面選擇多個文件</li>
+                <li><strong>步驟2</strong>：輸入分析標題（可選），點擊「開始AI分析」</li>
+                <li><strong>步驟3</strong>：等待AI完成分析，系統會自動跳轉到結果頁面</li>
+                <li><strong>步驟4</strong>：在「AI分析重點」頁面查看、下載或管理分析結果</li>
               </ul>
             </div>
           </Card>

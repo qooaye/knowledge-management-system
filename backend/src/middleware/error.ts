@@ -138,7 +138,7 @@ export const errorHandler = (
       ip: req.ip,
       userAgent: req.get('User-Agent'),
     },
-    user: req.user ? { id: req.user.id, email: req.user.email } : null,
+    user: (req as any).user ? { id: (req as any).user.id, email: (req as any).user.email } : null,
   };
 
   if (appError.statusCode >= 500) {

@@ -7,7 +7,15 @@ import { documentService } from '../services/documentService';
 import { storageService } from '../services/storageService';
 import { prisma } from '../utils/database';
 import { logger } from '../utils/logger';
-import { DocumentStatus } from '@prisma/client';
+// DocumentStatus is string type in schema
+const DocumentStatus = {
+  UPLOADING: 'UPLOADING',
+  PROCESSING: 'PROCESSING',
+  READY: 'READY',
+  ERROR: 'ERROR',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED'
+} as const;
 
 const router = Router();
 
@@ -46,7 +54,7 @@ router.post(
     try {
       const { title, description, tags, category } = req.body;
       const file = req.file;
-      const userId = req.user!.id;
+      const userId = (req as any).user!.id;
 
       if (!file) {
         return res.status(400).json({
@@ -124,7 +132,7 @@ router.post(
           storageUrl: uploadResult.url,
           status: processingResult.success ? DocumentStatus.COMPLETED : DocumentStatus.FAILED,
           content: processingResult.content || '',
-          metadata: processingResult.metadata || {},
+          metadata: JSON.stringify(processingResult.metadata || {}),
           processingError: processingResult.error,
         },
       });
@@ -174,7 +182,7 @@ router.post(
   async (req, res) => {
     try {
       const files = req.files as Express.Multer.File[];
-      const userId = req.user!.id;
+      const userId = (req as any).user!.id;
 
       if (!files || files.length === 0) {
         return res.status(400).json({
@@ -212,8 +220,11 @@ router.post(
               size: file.size,
               path: `/uploads/${fileName}`,
               category: fileCategory,
+              tags: '',
               status: DocumentStatus.PROCESSING,
-              userId,
+              user: {
+                connect: { id: userId }
+              },
             },
           });
 
@@ -256,7 +267,7 @@ router.post(
               storageUrl: uploadResult.url,
               status: processingResult.success ? DocumentStatus.COMPLETED : DocumentStatus.FAILED,
               content: processingResult.content || '',
-              metadata: processingResult.metadata || {},
+              metadata: JSON.stringify(processingResult.metadata || {}),
               processingError: processingResult.error,
             },
           });
@@ -312,7 +323,7 @@ router.get(
   async (req, res) => {
     try {
       const { page, limit, search, category, status, sortBy, sortOrder } = req.query;
-      const userId = req.user!.id;
+      const userId = (req as any).user!.id;
 
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
@@ -394,7 +405,7 @@ router.get(
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const document = await prisma.document.findFirst({
       where: {
@@ -431,7 +442,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, tags, category } = req.body;
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const document = await prisma.document.findFirst({
       where: {
@@ -477,12 +488,13 @@ router.patch('/:id', authenticateToken, async (req, res) => {
  * 刪除文件
  */
 /**
- * 分析文件
+ * 分析單個文件 - 統一使用AI分析系統
  */
 router.post('/:id/analyze', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const { title } = req.body;
+    const userId = (req as any).user!.id;
 
     const document = await prisma.document.findFirst({
       where: {
@@ -512,37 +524,40 @@ router.post('/:id/analyze', authenticateToken, async (req, res) => {
       });
     }
 
-    // 調用AI分析服務
-    const aiService = (await import('../services/aiService')).aiService;
-    const analysis = await aiService.analyzeDocument(document.content);
+    // 使用統一的AI分析服務
+    const { claudeAnalysisService } = await import('../services/claudeAnalysisService');
+    
+    // 準備文件用於分析
+    const filesForAnalysis = [{
+      fileName: document.fileName,
+      originalName: document.originalName,
+      content: document.content,
+      fileType: document.mimeType,
+      size: document.size
+    }];
 
-    // 儲存分析結果
-    const documentAnalysis = await prisma.documentAnalysis.upsert({
-      where: {
-        documentId: id,
-      },
-      create: {
-        documentId: id,
-        summary: analysis.summary,
-        keywords: analysis.keywords.join(','),
-        concepts: JSON.stringify(analysis.concepts),
-        topics: analysis.topics.join(','),
-        category: analysis.category,
-        difficulty: analysis.difficulty,
-        insights: analysis.insights.join(','),
-      },
-      update: {
-        summary: analysis.summary,
-        keywords: analysis.keywords.join(','),
-        concepts: JSON.stringify(analysis.concepts),
-        topics: analysis.topics.join(','),
-        category: analysis.category,
-        difficulty: analysis.difficulty,
-        insights: analysis.insights.join(','),
-      },
-    });
+    // 調用統一的AI分析服務
+    const analysisId = await claudeAnalysisService.analyzeFiles(
+      filesForAnalysis,
+      userId,
+      'single'
+    );
 
-    // 更新文件狀態
+    // 獲取分析結果
+    const analysisResult = await claudeAnalysisService.getAnalysisResult(analysisId, userId);
+
+    // 如果提供了自訂標題，更新分析結果
+    if (title && title !== analysisResult.title) {
+      await prisma.aIAnalysis.update({
+        where: { id: analysisId },
+        data: { 
+          title,
+          updatedAt: new Date()
+        }
+      });
+    }
+
+    // 更新原始文件狀態
     await prisma.document.update({
       where: { id },
       data: {
@@ -553,13 +568,19 @@ router.post('/:id/analyze', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: '文件分析完成',
+      message: '文件AI分析完成',
       data: {
-        ...documentAnalysis,
-        keywords: analysis.keywords,
-        concepts: analysis.concepts,
-        topics: analysis.topics,
-        insights: analysis.insights,
+        analysisId: analysisResult.id,
+        indexKey: analysisResult.indexKey,
+        title: title || analysisResult.title,
+        summary: analysisResult.summary,
+        keyPoints: analysisResult.keyPoints,
+        insights: analysisResult.insights,
+        keywords: analysisResult.keywords,
+        categories: analysisResult.categories,
+        markdownContent: analysisResult.markdownContent,
+        createdAt: analysisResult.createdAt,
+        downloadUrl: `/api/batch-analysis/${analysisId}/download`
       },
     });
   } catch (error) {
@@ -575,7 +596,7 @@ router.post('/:id/analyze', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const document = await prisma.document.findFirst({
       where: {
@@ -626,7 +647,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.get('/:id/download', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = (req as any).user!.id;
 
     const document = await prisma.document.findFirst({
       where: {
